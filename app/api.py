@@ -1,4 +1,4 @@
-from _datetime import datetime
+from datetime import datetime
 import time
 from app.validation import *
 from app.reading import *
@@ -56,24 +56,52 @@ def create_record():
     return redirect("/login")
 
 
+
+
+
+
+intentos_fallidos = {}
+
+
+
 # Endpoint para el login
 @app.route('/api/login', methods=['POST'])
 def api_login():
+    global intentos_fallidos
     email = normalize_input(request.form['email'])
     password = normalize_input(request.form['password'])
-
     db = read_db("db.txt")
+
+    if email in intentos_fallidos:
+        if intentos_fallidos[email]["intentos"] > 3:
+            intentos_fallidos[email]["tiempo_bloqueo"] = 300
+
+
+
+    if email not in intentos_fallidos:
+        intentos_fallidos[email] = {"intentos": 0, "tiempo_bloqueo": 0}
+       
+
+
     if email not in db:
         error = "Credenciales inválidas"
+        print(intentos_fallidos)
         return render_template('login.html', error=error)
+
 
     password_db = db.get(email)["password"]
 
-    if password_db == password :
+    if password_db == password:
         session['role'] = db[email]['role']
+        print(intentos_fallidos)
         return redirect(url_for('customer_menu'))
     else:
-        return render_template('login.html', error=error)
+        intentos_fallidos[email]["intentos"] += 1
+        print(intentos_fallidos)
+        return render_template('login.html', error="Credenciales inválidas")
+
+
+
 
 
 # Página principal del menú del cliente
