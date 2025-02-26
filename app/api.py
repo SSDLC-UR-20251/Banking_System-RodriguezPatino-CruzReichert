@@ -1,5 +1,5 @@
-from datetime import datetime
-import time
+import datetime
+from time import time
 from app.validation import *
 from app.reading import *
 from flask import request, jsonify, redirect, url_for, render_template, session, make_response
@@ -72,20 +72,25 @@ def api_login():
     password = normalize_input(request.form['password'])
     db = read_db("db.txt")
 
-    if email in intentos_fallidos:
-        if intentos_fallidos[email]["intentos"] > 3:
-            intentos_fallidos[email]["tiempo_bloqueo"] = 300
-
-
-
     if email not in intentos_fallidos:
-        intentos_fallidos[email] = {"intentos": 0, "tiempo_bloqueo": 0}
-       
-
+        intentos_fallidos[email] = {"intentos": 0,"bloqueado": False, "tiempo_bloqueo": 0, "time": datetime.datetime.now()}
+    else:
+        if intentos_fallidos[email]["bloqueado"] == False:
+            if intentos_fallidos[email]["intentos"] >= 3:
+                intentos_fallidos[email]["tiempo_bloqueo"] = 300
+                intentos_fallidos[email]["bloqueado"] = True
+        else:
+            if (datetime.datetime.now() - intentos_fallidos[email]["time"]).total_seconds() > intentos_fallidos[email]["tiempo_bloqueo"]:
+                    intentos_fallidos[email]["intentos"] = 0
+                    intentos_fallidos[email]["tiempo_bloqueo"] = 0
+                    intentos_fallidos[email]["bloqueado"] = False
+                    intentos_fallidos[email]["time"] = datetime.datetime.now()
+            else:
+                error = "Estas bloqueado mi rey :("
+                return render_template('login.html', error=error)
 
     if email not in db:
         error = "Credenciales inválidas"
-        print(intentos_fallidos)
         return render_template('login.html', error=error)
 
 
