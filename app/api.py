@@ -2,6 +2,7 @@ import datetime
 from time import time
 from app.validation import *
 from app.reading import *
+from app.encryption import *
 from flask import request, jsonify, redirect, url_for, render_template, session, make_response
 from app import app
 
@@ -18,6 +19,8 @@ def create_record():
     password = data.get('password')
     dni = data.get('dni')
     dob = data.get('dob')
+    role = data.get('role')
+    password_hash, salt = hash_with_salt(password)
     errores = []
     print(data)
     # Validaciones
@@ -46,21 +49,25 @@ def create_record():
         'nombre': normalize_input(nombre),
         'apellido': normalize_input(apellido),
         'username': normalize_input(username),
-        'password': normalize_input(password),
+        'password': password_hash.hex(),
+        'salt': salt.hex(),
         "dni": dni,
         'dob': normalize_input(dob),
-        "role":"admin"
+        "role": normalize_input(role)
     }
 
     write_db("db.txt", db)
     return redirect("/login")
 
 
-
-
-
-
 intentos_fallidos = {}
+
+@app.route('/delete_user/<email>', methods=['GET'])
+def delete_user(email):
+    db = read_db("db.txt")
+    del db[email]
+    write_db("db.txt", db)
+    return redirect(url_for('read_record', message="Usuario eliminado correctamente"))
 
 
 
@@ -89,16 +96,12 @@ def api_login():
                 error = "Estas bloqueado mi rey :("
                 return render_template('login.html', error=error)
 
-    if email not in db:
-        error = "Credenciales inválidas"
-        return render_template('login.html', error=error)
+    stored_hash = db[email]["password"]
+    stored_salt = db[email]["salt"]
 
-
-    password_db = db.get(email)["password"]
-
-    if password_db == password:
+    if verify_password(password, stored_hash, stored_salt):
+        session['email'] = email
         session['role'] = db[email]['role']
-        print(intentos_fallidos)
         return redirect(url_for('customer_menu'))
     else:
         intentos_fallidos[email]["intentos"] += 1
