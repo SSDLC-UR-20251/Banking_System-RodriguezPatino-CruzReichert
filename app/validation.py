@@ -1,53 +1,38 @@
-from _datetime import datetime
+import datetime
 import re
-
 import unicodedata
 
 
 def normalize_input(data):
-    if isinstance(data, str):
-        # Normalizar el texto a la forma canónica
-        data = unicodedata.normalize('NFKD', data)
-        # Convertir a minúsculas y eliminar espacios en blanco
-        data = data.strip().lower()
-    return data
+    return unicodedata.normalize("NFKD",data)
 
-
-# valido el email
 def validate_email(email):
     email = normalize_input(email)
-    pattern = r'^[a-zA-Z0-9._%+-]+@urosario\.edu\.co$'
-    return re.match(pattern, email) is not None
+    valid = email.endswith("@urosario.edu.co")
+    return valid
 
-
-# valido la edad
 def validate_dob(dob):
-    birth_date = datetime.strptime(dob, "%Y-%m-%d")
-    today = datetime.today()
-    age = today.year - birth_date.year
+    today = datetime.date.today()
+    ago = datetime.date(today.year - 16, today.month, today.day)
+    birth = datetime.datetime.strptime(dob, '%Y-%m-%d').date()
 
-    if (today.month, today.day) < (birth_date.month, birth_date.day):
-        age -= 1
+    if birth <= ago:
+        return True
+    return False
 
-    return age >= 18
-
-
-# valido el usuario
 def validate_user(user):
-    patron = r'^[a-zA-Z]+\.[a-zA-Z]+$'
-    return bool(re.fullmatch(patron, user))
+    valid = all(c.isalpha() or c == '.' for c in user)
+    return valid
 
 
-# valido el dni
 def validate_dni(dni):
-    patron = r'^\d{10}$'
-    return bool(re.fullmatch(patron, dni))
+    valid = all(c.isnumeric() for c in dni) and len(dni) < 11 and dni[0] == '1'
+    return valid
 
-
-# valido la contraseña
 def validate_pswd(pswd):
-    pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#*@\$%&\-!+=?])[A-Za-z\d#*@\$%&\-!+=?]{8,35}$'
-    return bool(re.fullmatch(pattern, pswd))
+    valid = any(c.isupper() for c in pswd) and any(c.islower() for c in pswd) and any(c.isnumeric() for c in pswd) and any(c in "#*@$%&-!+=?" for c in pswd) and 7 < len(pswd) < 36
+    return valid
+
 
 def validate_name(name):
-    return bool(re.fullmatch(r'^[a-zA-Z]+$', name))
+    return True

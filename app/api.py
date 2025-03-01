@@ -1,19 +1,18 @@
-from _datetime import datetime
-import time
+import datetime
+from time import time
 from app.validation import *
 from app.reading import *
+from app.encryption import *
 from flask import request, jsonify, redirect, url_for, render_template, session, make_response
 from app import app
-from app.encryption import *
 
-login_attempts = {}
-MAX_ATTEMPTS = 3
-BLOCK_TIME = 300  # 5 minutos en segundos
 app.secret_key = 'your_secret_key'
 
+key = get_random_bytes(32)
 
 @app.route('/api/users', methods=['POST'])
 def create_record():
+    global key
     data = request.form
     email = data.get('email')
     username = data.get('username')
@@ -22,7 +21,11 @@ def create_record():
     password = data.get('password')
     dni = data.get('dni')
     dob = data.get('dob')
+    role = data.get('role')
+    password_hash, salt = hash_with_salt(password)
+
     errores = []
+    print(data)
     # Validaciones
     if not validate_email(email):
         errores.append("Email inválido")
@@ -43,88 +46,97 @@ def create_record():
         return render_template('form.html', error=errores)
 
     email = normalize_input(email)
+    dni_crypt, nonce = encrypt_aes(dni,key)
 
-    hashed_pwd, salt = hash_with_salt(normalize_input(password))
     db = read_db("db.txt")
     db[email] = {
         'nombre': normalize_input(nombre),
         'apellido': normalize_input(apellido),
         'username': normalize_input(username),
-        'password': hashed_pwd,
-        "password_salt": salt,
-        "dni": dni,
+        'password': password_hash.hex(),
+        'salt': salt.hex(),
+        "dni": dni_crypt,
+        "nonce": nonce,
         'dob': normalize_input(dob),
-        "role": "user"
+        "role": normalize_input(str(role))
     }
 
     write_db("db.txt", db)
     return redirect("/login")
 
 
+intentos_fallidos = {}
+
+@app.route('/delete_user/<email>', methods=['GET'])
+def delete_user(email):
+    db = read_db("db.txt")
+    del db[email]
+    write_db("db.txt", db)
+    return redirect(url_for('read_record', message="Usuario eliminado correctamente"))
+
+
+
 # Endpoint para el login
 @app.route('/api/login', methods=['POST'])
 def api_login():
+    global intentos_fallidos
     email = normalize_input(request.form['email'])
     password = normalize_input(request.form['password'])
-
     db = read_db("db.txt")
     if email not in db:
         error = "Credenciales inválidas"
         return render_template('login.html', error=error)
+    else:
+        if email not in intentos_fallidos:
+            intentos_fallidos[email] = {"intentos": 0,"bloqueado": False, "tiempo_bloqueo": 0, "time": datetime.datetime.now()}
+        else:
+            if intentos_fallidos[email]["bloqueado"] == False:
+                if intentos_fallidos[email]["intentos"] >= 2:
+                    intentos_fallidos[email]["tiempo_bloqueo"] = 300
+                    intentos_fallidos[email]["bloqueado"] = True
+            else:
+                if (datetime.datetime.now() - intentos_fallidos[email]["time"]).total_seconds() > intentos_fallidos[email]["tiempo_bloqueo"]:
+                        intentos_fallidos[email]["intentos"] = 0
+                        intentos_fallidos[email]["tiempo_bloqueo"] = 0
+                        intentos_fallidos[email]["bloqueado"] = False
+                        intentos_fallidos[email]["time"] = datetime.datetime.now()
+                else:
+                    error = f"Estas bloqueado por {300//60} min mi rey :("
+                    return render_template('login.html', error=error)
 
-    # Verificar si el usuario está bloqueado
-    if email in login_attempts and login_attempts[email]['blocked_until'] > time.time():
-        block_time_remaining = int((login_attempts[email]['blocked_until'] - time.time()) / 60)
-        error = f"Cuenta bloqueada. Intenta nuevamente en {block_time_remaining} minutos."
-        return render_template('login.html', error=error)
+    stored_hash = db[email]["password"]
+    stored_salt = db[email]["salt"]
 
-    password_db = db.get(email)["password"]
-    salt_db = db.get(email)["password_salt"]
-
-    # Validar si el correo existe en la base de datos
-    if compare_salt(password, password_db, salt_db):
-        # Resetear intentos fallidos
-        login_attempts[email] = {'attempts': 0, 'blocked_until': 0}
-
+    if verify_password(password, stored_hash, stored_salt):
         session['email'] = email
         session['role'] = db[email]['role']
-
         return redirect(url_for('customer_menu'))
     else:
-        # Aumentar el contador de intentos fallidos
-        if email not in login_attempts:
-            login_attempts[email] = {'attempts': 0, 'blocked_until': 0}
+        intentos_fallidos[email]["intentos"] += 1
+        print(intentos_fallidos)
+        return render_template('login.html', error="Credenciales inválidas")
 
-        login_attempts[email]['attempts'] += 1
 
-        # Bloquear la cuenta si se exceden los intentos
-        if login_attempts[email]['attempts'] >= MAX_ATTEMPTS:
-            login_attempts[email]['blocked_until'] = time.time() + BLOCK_TIME
-            error = f"Se han excedido los intentos permitidos. Cuenta bloqueada por {BLOCK_TIME // 60} minutos."
-        else:
-            remaining_attempts = MAX_ATTEMPTS - login_attempts[email]['attempts']
-            error = f"Credenciales incorrectas. Tienes {remaining_attempts} intentos restantes."
-
-        return render_template('login.html', error=error)
 
 
 
 # Página principal del menú del cliente
 @app.route('/customer_menu')
 def customer_menu():
-    email = session.get('email')
+
     db = read_db("db.txt")
     transactions = read_db("transaction.txt")
-    current_balance = sum(float(t['balance']) for t in transactions.get(email, []))
-    last_transactions = transactions.get(email, [])[-5:]
+
+    current_balance = 100
+    last_transactions = []
     message = request.args.get('message', '')
     error = request.args.get('error', 'false').lower() == 'true'
     return render_template('customer_menu.html',
                            message=message,
-                           nombre=db.get(email)['nombre'],
+                           nombre="",
                            balance=current_balance,
                            last_transactions=last_transactions,
-                           error=error)
+                           error=error,)
 
 
 # Endpoint para leer un registro
@@ -188,88 +200,7 @@ def update_user(email):
 
 
     write_db("db.txt", db)
-    resp = make_response(redirect(url_for('read_record', message="Información actualizada correctamente")))
+    
 
     # Redirigir al usuario a la página de records con un mensaje de éxito
-    return resp
-
-@app.route('/api/delete_user/<email>', methods=['GET'])
-def delete_user(email):
-
-    if session.get('role') == 'admin':
-        db = read_db("db.txt")
-
-        if email not in db:
-            return redirect(url_for('read_record', message="Usuario no encontrado"))
-
-        del db[email]
-
-        write_db("db.txt", db)
-
-        return redirect(url_for('read_record', message="Usuario eliminado"))
-    else:
-        return redirect(url_for('read_record', message="No autorizado"))
-
-# Endpoint para depósito
-@app.route('/api/deposit', methods=['POST'])
-def api_deposit():
-    if 'email' not in session:
-        # Redirigir a la página de inicio de sesión si el usuario no está autenticado
-        error_msg = "Por favor, inicia sesión para acceder a esta página."
-        return render_template('login.html', error=error_msg)
-
-    deposit_balance = request.form['balance']
-    deposit_email = session.get('email')
-
-    db = read_db("db.txt")
-    transactions = read_db("transaction.txt")
-
-    # Verificamos si el usuario existe
-    if deposit_email in db:
-        # Guardamos la transacción
-        transaction = {"balance": deposit_balance, "type": "Deposit", "timestamp": str(datetime.now())}
-
-        # Verificamos si el usuario tiene transacciones previas
-        if deposit_email in transactions:
-            transactions[deposit_email].append(transaction)
-        else:
-            transactions[deposit_email] = [transaction]
-        write_db("transaction.txt", transactions)
-
-        return redirect(url_for('customer_menu', message="Depósito exitoso"))
-
-    return redirect(url_for('customer_menu', message="Email no encontrado"))
-
-
-# Endpoint para retiro
-@app.route('/api/withdraw', methods=['POST'])
-def api_withdraw():
-    email = session.get('email')
-    amount = float(request.form['balance'])
-
-    if amount <= 0:
-        return redirect(url_for('customer_menu',
-                                message="La cantidad a retirar debe ser positiva",
-                                error=True))
-
-    transactions = read_db("transaction.txt")
-    current_balance = sum(float(t['balance']) for t in transactions.get(email, []))
-
-    if amount > current_balance:
-        return redirect(url_for('customer_menu',
-                                message="Saldo insuficiente para retiro",
-                                error=True))
-
-    transaction = {"balance": -amount, "type": "Withdrawal", "timestamp": str(datetime.now())}
-
-    if email in transactions:
-        transactions[email].append(transaction)
-    else:
-        transactions[email] = [transaction]
-
-    write_db("transaction.txt", transactions)
-
-    return redirect(url_for('customer_menu',
-                            message="Retiro exitoso",
-                            error=False))
-
+    return redirect(url_for('read_record', message="Información actualizada correctamente"))

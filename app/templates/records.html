@@ -50,20 +50,39 @@
             </thead>
             <tbody>
                 <!-- Loop through the dictionary to display each user -->
-                {% for email, user_data in users.items() %}
-                <tr>
-                    <td>{{ email }}</td>
-                    <td>{{ user_data['nombre'] }}</td>
-                    <td>{{ user_data['apellido'] }}</td>
-                    <td>{{ user_data['username'] }}</td>
-                    <td>{{ user_data['dni'] }}</td>
-                    <td>{{ user_data['dob'] }}</td>
-                    <td>{{ user_data['role'] }}</td>
-                    <td>
-                        <a href="/edit_user/{{ email }}" class="btn btn-sm btn-primary">Edit</a>
-                    </td>
-                </tr>
-                {% endfor %}
+                {% if session['role'] == 'admin' %}
+                    {% for email, user_data in users.items() %}
+                    <tr>
+                        <td>{{ email }}</td>
+                        <td>{{ user_data['nombre'] }}</td>
+                        <td>{{ user_data['apellido'] }}</td>
+                        <td>{{ user_data['username'] }}</td>
+                        <td>{{ user_data['dni'] }}</td>
+                        <td>{{ user_data['dob'] }}</td>
+                        <td>{{ user_data['role'] }}</td>
+                        <td>
+                            <a href="/edit_user/{{ email }}" class="btn btn-sm btn-primary">Edit</a>
+                            <a href="/delete_user/{{ email }}" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                {% else %}
+                    {% for email, user_data in users.items() if email == session['email'] %}
+                    <tr>
+                        <td>{{ email }}</td>
+                        <td>{{ user_data['nombre'] }}</td>
+                        <td>{{ user_data['apellido'] }}</td>
+                        <td>{{ user_data['username'] }}</td>
+                        <td>{{ user_data['dni'] }}</td>
+                        <td>{{ user_data['dob'] }}</td>
+                        <td>{{ user_data['role'] }}</td>
+                        <td>
+                            <a href="/edit_user/{{ email }}" class="btn btn-sm btn-primary">Edit</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
             </tbody>
         </table>
 
