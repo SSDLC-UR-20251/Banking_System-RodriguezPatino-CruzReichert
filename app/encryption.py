@@ -1,11 +1,24 @@
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
+import os
+from dotenv import load_dotenv
+
+
+def get_master_key():
+    if not os.path.exists("Banking_System-RodriguezPatino-CruzReichert/.env"):
+        key = get_random_bytes(32)
+        open("Banking_System-RodriguezPatino-CruzReichert/.env","w").write("DNI_KEY=" +  key.hex())
+        load_dotenv("Banking_System-RodriguezPatino-CruzReichert/.env")
+        return bytes.fromhex(os.environ.get("DNI_KEY"))
+    else:
+        load_dotenv("Banking_System-RodriguezPatino-CruzReichert/.env")
+        return bytes.fromhex(os.environ.get("DNI_KEY"))
 
 
 def hash_with_salt(texto):
     texto = texto.encode()  
-    salt = get_random_bytes(16)  
+    salt = get_random_bytes(32)  
     hash = SHA256.new()
     hash.update(texto)
     hash.update(salt)
@@ -28,36 +41,27 @@ def decrypt_aes(texto_cifrado, nonce, clave):
     nonce_bytes = bytes.fromhex(nonce)
     cipher = AES.new(clave, AES.MODE_EAX, nonce=nonce_bytes)
     texto_descifrado = cipher.decrypt(texto_cifrado_bytes)
-    return texto_descifrado.decode()
+    return texto_descifrado.decode("UTF-8")
 
 
 def encrypt_aes(texto, clave):
-    # Convertir el texto a bytes
-    texto_bytes = texto.encode()
-
-    # Crear un objeto AES con la clave proporcionada
+    texto_bytes = texto.encode("UTF-8")
     cipher = AES.new(clave, AES.MODE_EAX)
-
-    # Cifrar el texto
     nonce = cipher.nonce
     texto_cifrado, tag = cipher.encrypt_and_digest(texto_bytes)
-
-    # Convertir el texto cifrado en bytes a una cadena de texto
     texto_cifrado_str = texto_cifrado.hex()
-
-    # Devolver el texto cifrado y el nonce
     return texto_cifrado_str, nonce.hex()
 
-# Función para ofuscar el DNI
+
 def ofuscar_dni(dni):
     return '*' * (len(dni) - 4) + dni[-4:]
 
 if __name__ == '__main__':
-    texto = "Hola Mundo"
-    clave = get_random_bytes(16)
-    texto_cifrado, nonce = encrypt_aes(texto, clave)
-    print("Texto cifrado: " + texto_cifrado)
-    print("Nonce: " + nonce)
-    des = decrypt_aes(texto_cifrado, nonce, clave)
-    print("Texto descifrado: " + des)
+    texto_cifrado = "4ee3670f86f3acb6b550"
+    nonce = "535f8289fe68b6c0a6aa9d9ec24eef15"
+    clave = "32e6bebede29b479a154af60f67d3295"
+
+
+
+    print(bytes.fromhex(clave))
 
