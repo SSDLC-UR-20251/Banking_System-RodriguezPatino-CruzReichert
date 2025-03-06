@@ -123,6 +123,11 @@ def api_login():
         print(intentos_fallidos)
         return render_template('login.html', error="Credenciales inválidas")
 
+#Enpoint para cerrar sesión
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login',message='Has cerrado sesión'))
 
 # Página principal del menú del cliente
 @app.route('/customer_menu')

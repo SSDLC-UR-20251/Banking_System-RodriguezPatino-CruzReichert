@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 def get_master_key():
     if not os.path.exists("Banking_System-RodriguezPatino-CruzReichert/.env"):
         key = get_random_bytes(32)
-        open("Banking_System-RodriguezPatino-CruzReichert/.env","w").write("DNI_KEY=" +  key.hex())
-        load_dotenv("Banking_System-RodriguezPatino-CruzReichert/.env")
+        open(".env","w").write("DNI_KEY=" +  key.hex())
+        load_dotenv(".env")
         return bytes.fromhex(os.environ.get("DNI_KEY"))
     else:
         load_dotenv("Banking_System-RodriguezPatino-CruzReichert/.env")
