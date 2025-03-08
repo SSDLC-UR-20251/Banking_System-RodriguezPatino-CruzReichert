@@ -14,11 +14,8 @@ key = get_master_key()
 @app.before_request
 def validar_sesion():
     email = session.get('email')
-
-    rutas_publicas = ['create_record', 'login', 'register','api_login']
-
+    rutas_publicas = ['index','create_record', 'login', 'register','api_login']
     print(request.endpoint)
-
     if not email and request.endpoint not in rutas_publicas:
         error_msg = "Por favor, inicia sesión para acceder a esta página."
         return render_template('login.html', error=error_msg)
@@ -145,7 +142,7 @@ def logout():
 # Página principal del menú del cliente
 @app.route('/customer_menu')
 def customer_menu():
-
+    modo = request.cookies.get('modo', 'light')
     email = session.get('email')
     db = read_db("db.txt")
     transactions = read_db("transaction.txt")
@@ -156,6 +153,7 @@ def customer_menu():
     return render_template('customer_menu.html',
                            message=message,
                            nombre=db.get(email)['nombre'],
+                           darkmode= modo,
                            balance=current_balance,
                            last_transactions=last_transactions,
                            error=error)
@@ -165,7 +163,7 @@ def customer_menu():
 # Endpoint para leer un registro
 @app.route('/records', methods=['GET'])
 def read_record():
-    
+    modo = request.cookies.get('modo','light')
     db = read_db("db.txt")
     user_email = session.get('email')
     user = db.get(user_email, None)
@@ -183,6 +181,7 @@ def read_record():
         return render_template('records.html',
                                users=db,
                                role=session.get('role'),
+                               darkmode=modo,
                                message=message,
                                )
     else:
@@ -198,15 +197,24 @@ def read_record():
 
 @app.route('/update_user/<email>', methods=['POST'])
 def update_user(email):
-
+    modo = request.cookies.get('modo')
     db = read_db("db.txt")
-    
 
     username = request.form['username']
     dni = request.form['dni']
     dob = request.form['dob']
     nombre = request.form['nombre']
     apellido = request.form['apellido']
+    modo = ''
+    if request.form.get('modo_vis', 'default') == 'on':
+        modo = 'dark'
+    else:
+        modo = 'light'
+    
+    response = make_response(redirect(url_for('read_record', message="Información actualizada correctamente")))
+    response.set_cookie('modo', modo)
+    
+    print()
     errores = []
 
     if not validate_dob(dob):
@@ -223,7 +231,7 @@ def update_user(email):
     if errores:
         return render_template('edit_user.html',
                                user_data=db[email],
-                               dni = decrypt_aes(db[email]["dni"],db[email]["nonce"],key),
+                               darkmode = modo,
                                email=email,
                                error=errores)
 
@@ -241,12 +249,13 @@ def update_user(email):
     
 
     # Redirigir al usuario a la página de records con un mensaje de éxito
-    return redirect(url_for('read_record', message="Información actualizada correctamente"))
+    return response
 
 
 # Endpoint para depósito
 @app.route('/api/deposit', methods=['POST'])
 def api_deposit():
+    modo = request.cookies.get('modo')
 
     deposit_balance = request.form['balance']
     deposit_email = session.get('email')
@@ -271,10 +280,9 @@ def api_deposit():
     return redirect(url_for('customer_menu', message="Email no encontrado"))
 
 
-# Endpoint para retiro
+
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
-    
     db = read_db("db.txt")
 
     email = session.get('email')
