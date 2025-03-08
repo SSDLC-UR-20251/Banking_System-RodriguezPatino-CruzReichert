@@ -192,7 +192,7 @@ def read_record():
         return render_template('records.html',
                                users={user_email: user},
                                error=None,
-                               message=message)
+                               message=message, darkmode=modo)
 
 
 @app.route('/update_user/<email>', methods=['POST'])
