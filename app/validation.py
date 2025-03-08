@@ -8,7 +8,7 @@ def normalize_input(data):
 
 def validate_email(email):
     email = normalize_input(email)
-    valid = email.endswith("@urosario.edu.co")
+    valid = email.endswith("@urosario.edu.co") and email.split('@')[0] != ""
     return valid
 
 def validate_dob(dob):
@@ -21,7 +21,11 @@ def validate_dob(dob):
     return False
 
 def validate_user(user):
-    valid = all(c.isalpha() or c == '.' for c in user)
+    if user.count('.') == 1:
+        part1, part2 = user.split('.')
+        valid = part1.isalpha() and part2.isalpha()
+    else:
+        valid = False
     return valid
 
 
@@ -35,4 +39,4 @@ def validate_pswd(pswd):
 
 
 def validate_name(name):
-    return True
+    return name.isalpha()
