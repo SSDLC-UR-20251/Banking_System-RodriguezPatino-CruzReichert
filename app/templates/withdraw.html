@@ -39,7 +39,8 @@
                 <form action="/api/withdraw" method="POST">
                     <div class="mb-3">
                         <label for="balance" class="form-label">Amount to Withdraw</label>
-                        <input type="number" class="form-control" id="balance" name="balance" placeholder="Enter amount to withdraw" required>
+                        <input type="number" class="form-control mb-3" id="balance" name="balance" placeholder="Enter amount to withdraw" required>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Ingresa tu clave para completar la transacción" required>
                     </div>
                     <button type="submit" class="btn btn-warning btn-lg btn-block">Withdraw</button>
                 </form>

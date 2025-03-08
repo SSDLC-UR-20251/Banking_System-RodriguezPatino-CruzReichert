@@ -8,9 +8,13 @@ from flask import request, jsonify, redirect, url_for, render_template, session,
 from app import app
 
 app.secret_key = 'your_secret_key'
-
-
 key = get_master_key()
+
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=5)
 
 @app.route('/api/users', methods=['POST'])
 def create_record():
@@ -133,7 +137,6 @@ def logout():
 @app.route('/customer_menu')
 def customer_menu():
     if 'email' not in session:
-        # Redirigir a la página de inicio de sesión si el usuario no está autenticado
         error_msg = "Por favor, inicia sesión para acceder a esta página."
         return render_template('login.html', error=error_msg)
 
@@ -156,6 +159,10 @@ def customer_menu():
 # Endpoint para leer un registro
 @app.route('/records', methods=['GET'])
 def read_record():
+    if 'email' not in session:
+        error_msg = "Por favor, inicia sesión para acceder a esta página."
+        return render_template('login.html', error=error_msg)
+    
     db = read_db("db.txt")
     user_email = session.get('email')
     user = db.get(user_email, None)
@@ -172,7 +179,6 @@ def read_record():
         
         return render_template('records.html',
                                users=db,
-                               dni = dni_list,
                                role=session.get('role'),
                                message=message,
                                )
@@ -189,9 +195,15 @@ def read_record():
 
 @app.route('/update_user/<email>', methods=['POST'])
 def update_user(email):
-    # Leer la base de datos de usuarios
+
+    if 'email' not in session:
+        error_msg = "Por favor, inicia sesión para acceder a esta página."
+        return render_template('login.html', error=error_msg)
+    
+
     db = read_db("db.txt")
     
+
     username = request.form['username']
     dni = request.form['dni']
     dob = request.form['dob']
@@ -211,22 +223,19 @@ def update_user(email):
         errores.append("Apellido inválido")
 
     if errores:
-
-        dni = db[email]["dni"]
-        nonce = db[email]["nonce"]
-        dni_decrypt = decrypt_aes(dni,nonce,key)
-        db[email]["dni"] = dni_decrypt
-
         return render_template('edit_user.html',
                                user_data=db[email],
+                               dni = decrypt_aes(db[email]["dni"],db[email]["nonce"],key),
                                email=email,
                                error=errores)
 
-
+    dni_encrypt, nonce = encrypt_aes(dni,key)
+    
+    db[email]['dni'] = dni_encrypt
+    db[email]['nonce'] = nonce
     db[email]['username'] = normalize_input(username)
     db[email]['nombre'] = normalize_input(nombre)
     db[email]['apellido'] = normalize_input(apellido)
-    db[email]['dni'] = dni
     db[email]['dob'] = normalize_input(dob)
 
 
@@ -241,7 +250,6 @@ def update_user(email):
 @app.route('/api/deposit', methods=['POST'])
 def api_deposit():
     if 'email' not in session:
-        # Redirigir a la página de inicio de sesión si el usuario no está autenticado
         error_msg = "Por favor, inicia sesión para acceder a esta página."
         return render_template('login.html', error=error_msg)
 
@@ -271,31 +279,46 @@ def api_deposit():
 # Endpoint para retiro
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
+    if 'email' not in session:
+        error_msg = "Por favor, inicia sesión para acceder a esta página."
+        return render_template('login.html', error=error_msg)
+    
+    db = read_db("db.txt")
+
     email = session.get('email')
     amount = float(request.form['balance'])
+    password = str(request.form['password'])
 
-    if amount <= 0:
+    stored_hash = db[email]["password"]
+    stored_salt = db[email]["salt"]
+
+    if verify_password(password, stored_hash, stored_salt):
+        if amount <= 0:
+            return redirect(url_for('customer_menu',
+                                    message="La cantidad a retirar debe ser positiva",
+                                    error=True))
+
+        transactions = read_db("transaction.txt")
+        current_balance = sum(float(t['balance']) for t in transactions.get(email, []))
+
+        if amount > current_balance:
+            return redirect(url_for('customer_menu',
+                                    message="Saldo insuficiente para retiro",
+                                    error=True))
+
+        transaction = {"balance": -amount, "type": "Withdrawal", "timestamp": str(datetime.datetime.now())}
+
+        if email in transactions:
+            transactions[email].append(transaction)
+        else:
+            transactions[email] = [transaction]
+
+        write_db("transaction.txt", transactions)
+
         return redirect(url_for('customer_menu',
-                                message="La cantidad a retirar debe ser positiva",
-                                error=True))
-
-    transactions = read_db("transaction.txt")
-    current_balance = sum(float(t['balance']) for t in transactions.get(email, []))
-
-    if amount > current_balance:
-        return redirect(url_for('customer_menu',
-                                message="Saldo insuficiente para retiro",
-                                error=True))
-
-    transaction = {"balance": -amount, "type": "Withdrawal", "timestamp": str(datetime.now())}
-
-    if email in transactions:
-        transactions[email].append(transaction)
+                                message="Retiro exitoso",
+                                error=False))
     else:
-        transactions[email] = [transaction]
-
-    write_db("transaction.txt", transactions)
-
-    return redirect(url_for('customer_menu',
-                            message="Retiro exitoso",
-                            error=False))
+        return redirect(url_for('customer_menu',
+                        message="Tu contraseña es incorrecta =(",
+                        error=True))
