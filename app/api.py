@@ -205,6 +205,7 @@ def update_user(email):
     dob = request.form['dob']
     nombre = request.form['nombre']
     apellido = request.form['apellido']
+    #Creación de la cookie
     modo = ''
     if request.form.get('modo_vis', 'default') == 'on':
         modo = 'dark'
@@ -212,7 +213,7 @@ def update_user(email):
         modo = 'light'
     
     response = make_response(redirect(url_for('read_record', message="Información actualizada correctamente")))
-    response.set_cookie('modo', modo)
+    response.set_cookie('modo', modo,httponly=True,secure=True)
     
     print()
     errores = []
