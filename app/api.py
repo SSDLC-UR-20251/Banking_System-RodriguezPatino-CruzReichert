@@ -8,13 +8,21 @@ from flask import request, jsonify, redirect, url_for, render_template, session,
 from app import app
 
 app.secret_key = 'your_secret_key'
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=5)
 key = get_master_key()
 
-
 @app.before_request
-def make_session_permanent():
-    session.permanent = True
-    app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=5)
+def validar_sesion():
+    email = session.get('email')
+
+    rutas_publicas = ['create_record', 'login', 'register','api_login']
+
+    print(request.endpoint)
+
+    if not email and request.endpoint not in rutas_publicas:
+        error_msg = "Por favor, inicia sesión para acceder a esta página."
+        return render_template('login.html', error=error_msg)
+
 
 @app.route('/api/users', methods=['POST'])
 def create_record():
@@ -121,6 +129,7 @@ def api_login():
     if verify_password(password, stored_hash, stored_salt):
         session['email'] = email
         session['role'] = db[email]['role']
+        session.permanent = True
         return redirect(url_for('customer_menu'))
     else:
         intentos_fallidos[email]["intentos"] += 1
@@ -136,9 +145,6 @@ def logout():
 # Página principal del menú del cliente
 @app.route('/customer_menu')
 def customer_menu():
-    if 'email' not in session:
-        error_msg = "Por favor, inicia sesión para acceder a esta página."
-        return render_template('login.html', error=error_msg)
 
     email = session.get('email')
     db = read_db("db.txt")
@@ -159,9 +165,6 @@ def customer_menu():
 # Endpoint para leer un registro
 @app.route('/records', methods=['GET'])
 def read_record():
-    if 'email' not in session:
-        error_msg = "Por favor, inicia sesión para acceder a esta página."
-        return render_template('login.html', error=error_msg)
     
     db = read_db("db.txt")
     user_email = session.get('email')
@@ -195,11 +198,6 @@ def read_record():
 
 @app.route('/update_user/<email>', methods=['POST'])
 def update_user(email):
-
-    if 'email' not in session:
-        error_msg = "Por favor, inicia sesión para acceder a esta página."
-        return render_template('login.html', error=error_msg)
-    
 
     db = read_db("db.txt")
     
@@ -249,9 +247,6 @@ def update_user(email):
 # Endpoint para depósito
 @app.route('/api/deposit', methods=['POST'])
 def api_deposit():
-    if 'email' not in session:
-        error_msg = "Por favor, inicia sesión para acceder a esta página."
-        return render_template('login.html', error=error_msg)
 
     deposit_balance = request.form['balance']
     deposit_email = session.get('email')
@@ -279,9 +274,6 @@ def api_deposit():
 # Endpoint para retiro
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
-    if 'email' not in session:
-        error_msg = "Por favor, inicia sesión para acceder a esta página."
-        return render_template('login.html', error=error_msg)
     
     db = read_db("db.txt")
 
