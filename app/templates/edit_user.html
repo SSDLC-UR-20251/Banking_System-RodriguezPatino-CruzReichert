@@ -60,12 +60,12 @@
                 <label for="dob">Date of Birth</label>
                 <input type="date" class="form-control" id="dob" name="dob" value="{{ user_data['dob'] }}" required>
             </div>
-            
-            <div class="form-group">
-                <label for="modo_vis">Modo oscuro</label>
-                <input type="checkbox" id="modo_vis" name="modo_vis">
-            </div>  
-
+            {% if email == email_sesion %}
+                <div class="form-group">
+                    <label for="modo_vis">Modo oscuro</label>
+                    <input type="checkbox" id="modo_vis" name="modo_vis">
+                </div>  
+            {% endif %}
 
 
             <button type="submit" class="btn btn-primary">Save Changes</button>

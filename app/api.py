@@ -205,7 +205,7 @@ def update_user(email):
     dob = request.form['dob']
     nombre = request.form['nombre']
     apellido = request.form['apellido']
-    #Creación de la cookie
+    
     modo = ''
     if request.form.get('modo_vis', 'default') == 'on':
         modo = 'dark'

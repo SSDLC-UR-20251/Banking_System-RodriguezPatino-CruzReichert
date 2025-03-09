@@ -39,4 +39,4 @@ def validate_pswd(pswd):
 
 
 def validate_name(name):
-    return name.isalpha()
+    return name.isalpha() or ' ' in name

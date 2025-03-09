@@ -30,7 +30,7 @@ def login():
 
 @app.route('/edit_user/<email>', methods=['GET'])
 def edit_user(email):
-
+    email_sesion = session.get('email')
     db = read_db("db.txt")
 
     if email not in db:
@@ -41,7 +41,11 @@ def edit_user(email):
     nonce = db[email]["nonce"]
     dni_decrypt = decrypt_aes(dni_encrypt,nonce,key)
     modo = request.cookies.get('modo', 'light')
-    return render_template('edit_user.html', user_data=user_info,dni=dni_decrypt, email=email,darkmode=modo)
+    return render_template('edit_user.html',user_data=user_info,
+                                            dni=dni_decrypt, 
+                                            email=email,
+                                            email_sesion = email_sesion,
+                                            darkmode=modo)
 
 
 # Formulario de retiro
