@@ -1,4 +1,4 @@
-ifrom _datetime import datetime
+from _datetime import datetime
 import re
 
 import unicodedata
