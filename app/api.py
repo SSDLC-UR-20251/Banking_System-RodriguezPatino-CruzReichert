@@ -1,5 +1,4 @@
-from datetime import timedelta
-import datetime
+from datetime import timedelta, datetime
 from time import time
 from app.validation import *
 from app.reading import *
@@ -104,7 +103,7 @@ def api_login():
         return render_template('login.html', error=error)
     else:
         if email not in intentos_fallidos:
-            intentos_fallidos[email] = {"intentos": 0,"bloqueado": False, "tiempo_bloqueo": 0, "time": datetime.datetime.now()}
+            intentos_fallidos[email] = {"intentos": 0,"bloqueado": False, "tiempo_bloqueo": 0, "time": datetime.now()}
         else:
             if intentos_fallidos[email]["bloqueado"] == False:
                 if intentos_fallidos[email]["intentos"] >= 2:
@@ -115,7 +114,7 @@ def api_login():
                         intentos_fallidos[email]["intentos"] = 0
                         intentos_fallidos[email]["tiempo_bloqueo"] = 0
                         intentos_fallidos[email]["bloqueado"] = False
-                        intentos_fallidos[email]["time"] = datetime.datetime.now()
+                        intentos_fallidos[email]["time"] = datetime.now()
                 else:
                     error = f"Estas bloqueado por {300//60} min mi rey :("
                     return render_template('login.html', error=error)
@@ -267,7 +266,7 @@ def api_deposit():
     # Verificamos si el usuario existe
     if deposit_email in db:
         # Guardamos la transacción
-        transaction = {"balance": deposit_balance, "type": "Deposit", "timestamp": str(datetime.datetime.now())}
+        transaction = {"balance": deposit_balance, "type": "Deposit", "timestamp": str(datetime.now())}
 
         # Verificamos si el usuario tiene transacciones previas
         if deposit_email in transactions:
@@ -307,7 +306,7 @@ def api_withdraw():
                                     message="Saldo insuficiente para retiro",
                                     error=True))
 
-        transaction = {"balance": -amount, "type": "Withdrawal", "timestamp": str(datetime.datetime.now())}
+        transaction = {"balance": -amount, "type": "Withdrawal", "timestamp": str(datetime.now())}
 
         if email in transactions:
             transactions[email].append(transaction)
