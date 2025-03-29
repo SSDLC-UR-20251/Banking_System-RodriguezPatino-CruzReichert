@@ -1,5 +1,5 @@
+from datetime import timedelta
 import datetime
-
 from time import time
 from app.validation import *
 from app.reading import *
@@ -8,7 +8,7 @@ from flask import request, jsonify, redirect, url_for, render_template, session,
 from app import app
 
 app.secret_key = 'your_secret_key'
-app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=5)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
 key = get_master_key()
 
 @app.before_request
