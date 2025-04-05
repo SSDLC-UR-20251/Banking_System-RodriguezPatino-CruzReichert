@@ -66,9 +66,9 @@ jobs:
             echo "Your efforts to maintain the security of our codebase are greatly appreciated!" >&2
             exit 1
           fi
-          - name: exportar resultados
-            uses: actions/upload-artifact@v4
-            with:
-              name: code-coverage-report
-              path: resultados.json
+      - name: exportar resultados
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: resultados.json
   

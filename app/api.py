@@ -7,7 +7,7 @@ from app.encryption import *
 from flask import request, jsonify, redirect, url_for, render_template, session, make_response
 from app import app
 
-app.secret_key = 'your_secret_key'
+
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=5)
 key = get_master_key()
 

@@ -4,7 +4,6 @@ from app.encryption import decrypt_aes, ofuscar_dni, get_master_key
 from app.reading import read_db
 
 
-# app.secret_key = 'your_secret_key'
 key = get_master_key()
 
 @app.route('/')

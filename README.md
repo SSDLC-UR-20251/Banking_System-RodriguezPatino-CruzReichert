@@ -2,7 +2,7 @@
 
 ## 🏛 Universidad del Rosario - 2025 - 1
 
-En este ejercicio se abordarán múltiples aspectos de seguridad en una aplicación bancaria, incluyendo el tratamiento de datos confidenciales, autenticación en operaciones sensibles y manejo de sesiones. 
+En este ejercicio se abordarán múltiples aspectos de seguridad en una aplicación bancaria, incluyendo el tratamiento de datos confidenciales, autenticación en operaciones sensibles y manejo de sesiones..
 
 ---
 
@@ -70,15 +70,6 @@ Estas funciones están enfocadas en mejorar la seguridad de la aplicación, aseg
 - **Modificar las vistas** para que la interfaz refleje la preferencia almacenada en la cookie.
 - **Aplicar la configuración a todas las páginas**.
 - **Incluir los estilos y scripts necesarios en las vistas**:
-  ```html
-  <html lang="en" data-bs-theme="{{ 'dark' if darkmode == 'dark' else 'light' }}">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-        crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
-  ```
 
 ---
 
