@@ -57,11 +57,5 @@ def ofuscar_dni(dni):
     return '*' * (len(dni) - 4) + dni[-4:]
 
 if __name__ == '__main__':
-    texto_cifrado = "4ee3670f86f3acb6b550"
-    nonce = "535f8289fe68b6c0a6aa9d9ec24eef15"
-    clave = "32e6bebede29b479a154af60f67d3295"
-
-
-
-    print(bytes.fromhex(clave))
+    print("hola mundo")
 
