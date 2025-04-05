@@ -2,7 +2,7 @@
 
 ## 🏛 Universidad del Rosario - 2025 - 1
 
-En este ejercicio se abordarán múltiples aspectos de seguridad en una aplicación bancaria, incluyendo el tratamiento de datos confidenciales, autenticación en operaciones sensibles y manejo de sesiones. 
+En este ejercicio se abordarán múltiples aspectos de seguridad en una aplicación bancaria, incluyendo el tratamiento de datos confidenciales, autenticación en operaciones sensibles y manejo de sesiones..
 
 ---
 
